@@ -20,7 +20,9 @@ module WildBattleGame
       @warriors = warriors
       @turns = 0
       @state = "Только началась"
+      Dir.mkdir("#{File.dirname(__FILE__)}/../logs") unless Dir.exist?("#{File.dirname(__FILE__)}/../logs")
       @log_file = File.new("#{File.dirname(__FILE__)}/../logs/battle_#{next_log_count}.log", 'w')
+      greet_warriors
     end
 
     def turn
@@ -42,17 +44,29 @@ module WildBattleGame
 
     private
 
+    def greet_warriors
+      logger "Воины:"
+      @warriors.each { |w| logger "  #{w.name} (Здоровье: #{w.hp}, Урон: #{w.dmg})" }
+      logger '=' * 35
+    end
+
     def eval_state
       wars = @warriors.select { |w| w.hp > 0 }
-      @state = wars.count > 1 ? "В разгаре" : "#{wars[0].name} - победил"
+      @state = if wars.count > 1
+                 'В разгаре'
+               else
+                 logger "\nРезультат: \"#{wars[0].name} - победил\" (#{wars[0].hp} хп)"
+                 "#{wars[0].name} - победил"
+               end
     end
 
     def logger(msg)
-      @state[-1..-7] != 'победил' ? @log_file.write("#{msg}\n") : @log_file.close
+      @log_file.write("#{msg}\n")
+      @log_file.close if @state[-1..-7] == 'победил'
     end
 
     def next_log_count
-      Dir["#{File.dirname(__FILE__)}/../logs/battle_*.log"].map { |f| File.basename(f)[/\d+/].to_i }.max.next
+      (Dir["#{File.dirname(__FILE__)}/../logs/battle_*.log"].map { |f| File.basename(f)[/\d+/].to_i }.max || 0).next
     end
   end
 end
